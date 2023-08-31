@@ -27,24 +27,39 @@ const schema = z
     firstName: z
       .string()
       .min(3, { message: "First name must have at least 3 characters" }),
+
     lastName: z
       .string()
       .min(3, { message: "Last name must have at least 3 characters" }),
+
     email: z.string().email({ message: "Invalid email format" }),
+
     plan: z.enum(["funrun", "mini", "half", "full"], {
       errorMap: (issue, ctx) => ({ message: "Please select a plan" }),
     }),
+
     gender: z.enum(["male", "female"], {
       errorMap: (issue, ctx) => ({ message: "Please choose a gender" }),
     }),
+
     acceptTermsAndConds: z.literal(true, {
       errorMap: (issue, ctx) => ({
         message: "You must accept terms and conditions",
       }),
     }),
+    hasCoupon: z.literal(true, {
+      errorMap: (issue, ctx) => ({
+        message: "Invalid coupon code",
+      }),
+    }),
+
     hasCoupon: z.boolean(),
     coupon: z.string(),
-    password: z.string(),
+    password: z
+      .string()
+      .min(6, { message: "Password must contain at least 6 characters" })
+      .max(12, { message: "Password must not exceed 12 characters" }),
+
     confirmPassword: z.string(),
   })
   .refine(
@@ -56,12 +71,25 @@ const schema = z
       // if user tick "I have coupon" and fill correct code, then it's ok too
       if (data.hasCoupon && data.coupon === "CMU2023") return true;
       // ticking "I have coupon" but fill wrong coupon code, show error
-      return false;
+      if (data.hasCoupon && data.coupon != "CMU2023") return false;
     },
+
     //set error message and the place it should show
     {
       message: "Invalid coupon code",
       path: ["coupon"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.confirmPassword === data.password) return true;
+      if (data.confirmPassword != data.password) return false;
+    },
+
+    //set error message and the place it should show
+    {
+      message: "Password does not match",
+      path: ["confirmPassword"],
     }
   );
 
@@ -90,6 +118,11 @@ export default function Home() {
     //TIP : get value of currently filled form with variable "form.values"
 
     if (form.values.plan === "funrun") price = 500;
+    if (form.values.plan === "mini") price = 800;
+    if (form.values.plan === "half") price = 1200;
+    if (form.values.plan === "full") price = 1500;
+    if (form.values.hasCoupon === true && form.values.coupon === "CMU2023")
+      price *= 0.7;
     //check the rest plans by yourself
     //TIP : check /src/app/libs/runningPlans.js
 
@@ -175,7 +208,11 @@ export default function Home() {
           </Stack>
         </form>
 
-        <Footer year={2023} fullName="Chayanin Suatap" studentId="650610560" />
+        <Footer
+          year={2023}
+          fullName="Sirapob Lueangprasert"
+          studentId="650612102"
+        />
       </Container>
 
       <TermsAndCondsModal opened={opened} close={close} />
